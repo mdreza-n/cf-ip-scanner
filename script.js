@@ -213,12 +213,7 @@ async function testIPs(ipList) {
     }
     testNo++;
     let testResult = 0;
-    let url = null;
-    if (protocol == 'https') {
-      url = `https://${ip}:${portNo}/__down`;
-    } else {
-      url = `http://${ip}:${portNo}/cdn-cgi/trace`;
-    }
+    let url = `${protocol}://${ip}:${portNo}/cdn-cgi/trace`;
 
     const startTime = performance.now();
     const controller = new AbortController();
@@ -248,9 +243,10 @@ async function testIPs(ipList) {
         const response = await fetch(url, {
           signal: controller.signal,
         });
-
+        console.log(`${ip}   ${ch}   OK`)
         testResult++;
       } catch (error) {
+        console.log(`${ip}   ${ch}   Fail`, error.name)
         if (!["AbortError", "TypeError"].includes(error.name)) {
           testResult++;
         }
@@ -260,8 +256,8 @@ async function testIPs(ipList) {
     }
 
     const latency = Math.floor((performance.now() - startTime) / 5);
-
-    if (testResult === 5 && latency <= maxLatency) {
+    console.log(testResult, latency, maxLatency)
+    if (testResult >= 3 && latency <= maxLatency) {
       numberOfWorkingIPs++;
       validIPs.push({ip: ip, latency: latency});
       const sortedArr = validIPs.sort((a, b) => a.latency - b.latency);
@@ -306,7 +302,7 @@ async function testIPs(ipList) {
     `;
   } else {
     if (window.self !== window.top) {
-      window.top.postMessage(validIPs.map(el => el.ip).join('\n'), '*');
+      window.top.postMessage({cleanIPs: validIPs.map(el => el.ip).join('\n')}, '*');
     }
 
     document.getElementById('test-no').innerHTML = `
